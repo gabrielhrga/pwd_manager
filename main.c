@@ -1,4 +1,4 @@
-//Pravi se vise General kategorija, ne ispisuje se dobro
+//zadnji put rijesene funkcije: search credential, add category, update credential
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,11 +31,14 @@ typedef struct _category {
 
 catPosition CreateCategory(const char* cat_name);
 credPosition CreateCredential();
+void AddCategory(catPosition p);
 void ListCategories(catPosition p);
 void AddCredential(catPosition p);
 void InsertCredential(catPosition p, credPosition new_credential, const char cat_name[CATEGORY_NAME_SIZE]);
 void ListAllCredentials(catPosition p);
 void FreeMemory(catPosition p);
+credPosition SearchCredential(catPosition p);
+void UpdateCredential(catPosition p);
 
 void ListCatCredentials(catPosition category) {
     credPosition temp = category->cred_next;
@@ -54,7 +57,7 @@ int main() {
 
     printf("- Welcome to LockIT -\n");
     while(1) {
-        printf("Enter your operation (1) Add new credential (2) List categories, (3) List credentials, (0) Quit): ");
+        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (0) Quit\nEnter your operation: ");
         scanf(" %d", &choice);
         getchar();
         if(choice == 1) {
@@ -65,6 +68,15 @@ int main() {
         }
         else if(choice == 3) {
             ListAllCredentials(head->cat_next);
+        }
+        else if(choice == 4) {
+            SearchCredential(head->cat_next);
+        }
+        else if(choice == 5) {
+            UpdateCredential(head->cat_next);
+        }
+        else if(choice == 6) {
+            AddCategory(head);
         }
         else if(choice == 0) {
             printf("Thanks for using LockIT!\n");
@@ -125,6 +137,20 @@ credPosition CreateCredential() {
 
     return new_credential;
 
+}
+
+void AddCategory(catPosition p) {
+    char temp_name[CATEGORY_NAME_SIZE];
+    catPosition new_category = NULL;
+
+    printf("Enter new category name: ");
+    fgets(temp_name, CATEGORY_NAME_SIZE, stdin);
+    temp_name[strcspn(temp_name, "\n")] = 0;
+
+    new_category = CreateCategory(temp_name);
+
+    new_category->cat_next = p->cat_next;
+    p->cat_next = new_category;
 }
 
 void ListCategories(catPosition p) { //provjeru if p == NULL prebaci u main
@@ -225,4 +251,59 @@ void FreeMemory(catPosition p) {
 
         free(temp_cat);
     }
+}
+
+credPosition SearchCredential(catPosition p) {
+    char temp_desc[CRED_DESCRIPTION_SIZE];
+    credPosition temp = NULL;
+
+    printf("Enter description: ");
+    scanf("%s", temp_desc);
+    getchar();
+
+    while(p != NULL) {
+        temp = p->cred_next;
+
+        while(temp != NULL) {
+            if(strcmp(temp->description, temp_desc) == 0) {
+                printf("Credential found...\n");
+                printf("--------------------------------\n");
+                printf("Category: %s\n", p->name);
+                printf("--------------------------------\n");
+                printf(" Description: %s\n Username: %s\n Password: %s\n", temp->description, temp->username, temp->password);
+                printf("--------------------------------\n");
+
+                return temp;
+            }
+            temp = temp->next;
+        }
+        p = p->cat_next;
+    }
+
+    printf("Credential not found...\n");
+    return NULL;
+}
+
+void UpdateCredential(catPosition p) {
+    credPosition cred_update = NULL;
+
+    cred_update = SearchCredential(p);
+
+    if(cred_update == NULL) {
+        printf("Credential could not be updated...\n");
+    }
+    else {
+        printf("Enter your updated username: ");
+        fgets(cred_update->username, CRED_USERNAME_SIZE, stdin);
+        cred_update->username[strcspn(cred_update->username, "\n")] = 0;
+
+        printf("Enter your updated password: ");
+        fgets(cred_update->password, CRED_PASSWORD_SIZE, stdin);
+        cred_update->password[strcspn(cred_update->password, "\n")] = 0;
+
+        printf("Enter your updated description: ");
+        fgets(cred_update->description, CRED_DESCRIPTION_SIZE, stdin);
+        cred_update->description[strcspn(cred_update->description, "\n")] = 0; 
+    }
+
 }
