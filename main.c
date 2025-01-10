@@ -1,4 +1,8 @@
-//zadnji put rijesene funkcije: search credential, add category, update credential
+//rijesi funkciju za enkripciju, fileove, delete credential
+//GENERATOR SIFRI, PROVJERA JAKOSTI
+//(vrijeme unosa)
+
+//Problem kod trazenja credentiala, ako je description vise rijeci ne moze se nac: namjesti fgets kod pretrazivanja
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +11,7 @@
 #define CATEGORY_NAME_SIZE 20
 #define CRED_USERNAME_SIZE 30
 #define CRED_PASSWORD_SIZE 20
-#define CRED_DESCRIPTION_SIZE 20
+#define CRED_DESCRIPTION_SIZE 50
 #define CRED_DATE_SIZE 20
 #define MAX_BUFFER 1024
 
@@ -39,14 +43,9 @@ void ListAllCredentials(catPosition p);
 void FreeMemory(catPosition p);
 credPosition SearchCredential(catPosition p);
 void UpdateCredential(catPosition p);
-
-void ListCatCredentials(catPosition category) {
-    credPosition temp = category->cred_next;
-    while(temp != NULL) {
-        printf("%s\n", temp->description);
-        temp = temp->next;
-    }
-}
+void SortCatAlphabetically(catPosition p);
+void ListCatCredential(catPosition category);
+void SearchCategory(catPosition p);
 
 int main() {
     catPosition head = (catPosition)malloc(sizeof(Category));
@@ -57,7 +56,7 @@ int main() {
 
     printf("- Welcome to LockIT -\n");
     while(1) {
-        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (0) Quit\nEnter your operation: ");
+        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories alphabetically\n (0) Quit\nEnter your operation: ");
         scanf(" %d", &choice);
         getchar();
         if(choice == 1) {
@@ -77,6 +76,12 @@ int main() {
         }
         else if(choice == 6) {
             AddCategory(head);
+        }
+        else if(choice == 7) {
+            SearchCategory(head->cat_next);
+        }
+        else if(choice == 8) {
+            SortCatAlphabetically(head);
         }
         else if(choice == 0) {
             printf("Thanks for using LockIT!\n");
@@ -221,17 +226,24 @@ void ListAllCredentials(catPosition p) {
     
     while(p != NULL) {
         credPosition temp = p->cred_next;
+
+        printf("--------------------------------\n");
+        printf("Category: %s\n", p->name);
+        printf("--------------------------------\n");
+
         if(temp == NULL) {
             printf("No credentials in this category...\n");
         }
 
-        printf("--------------------------------\n");
-        printf("Category: %s\n", p->name);
-        while(temp != NULL) {
-            printf("--------------------------------\n");
-            printf(" Description: %s\n Username: %s\n Password: %s\n", temp->description, temp->username, temp->password);
-            printf("--------------------------------\n");
-            temp = temp->next;
+        else {
+            
+            while(temp != NULL) {
+                printf("--------------------------------\n");
+                printf(" Description: %s\n Username: %s\n Password: %s\n", temp->description, temp->username, temp->password);
+                printf("--------------------------------\n");
+                temp = temp->next;
+            }
+        
         }
         p = p->cat_next;
     }
@@ -306,4 +318,70 @@ void UpdateCredential(catPosition p) {
         cred_update->description[strcspn(cred_update->description, "\n")] = 0; 
     }
 
+}
+
+void ListCatCredential(catPosition category) {
+
+    if(category->cred_next == NULL) {
+        printf("No credentials in this category...\n");
+    }
+
+    else {
+        credPosition temp = category->cred_next;
+
+        printf("--------------------------------\n");
+        printf("Category: %s\n", category->name);
+        while(temp != NULL) {
+            printf("--------------------------------\n");
+            printf(" Description: %s\n Username: %s\n Password: %s\n", temp->description, temp->username, temp->password);
+            printf("--------------------------------\n");
+            temp = temp->next;
+    }
+    }
+    
+}
+
+void SearchCategory(catPosition p) {
+    char temp_name[CATEGORY_NAME_SIZE];
+    int found = 0;
+
+    printf("Enter category: ");
+    fgets(temp_name, CATEGORY_NAME_SIZE, stdin);
+    temp_name[strcspn(temp_name, "\n")] = 0;
+
+    while(p != NULL) {
+        if(strcmp(p->name, temp_name) == 0) {
+            found = 1;
+            ListCatCredential(p);
+        }
+        p = p->cat_next;
+    }
+
+    if(found == 0) {
+        printf("No category by that name...\n");
+    }
+}
+
+void SortCatAlphabetically(catPosition p) {
+    catPosition j, prev_j, temp, end;
+
+    end = NULL;
+    while(p->cat_next != end) {
+        prev_j = p;
+        j = p->cat_next;
+
+        while(j->cat_next != end) {
+            if(strcmp(j->name, j->cat_next->name)>0) {
+                temp = j->cat_next;
+                prev_j->cat_next = temp;
+                j->cat_next = temp->cat_next;
+                temp->cat_next = j;
+
+                j = temp;
+            }
+            prev_j = j;
+            j = j->cat_next;
+        }
+        end = j;
+    }
 }
