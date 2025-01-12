@@ -1,9 +1,3 @@
-//rijesi funkciju za enkripciju, fileove, delete credential
-//GENERATOR SIFRI, PROVJERA JAKOSTI
-//(vrijeme unosa)
-
-//Problem kod trazenja credentiala, ako je description vise rijeci ne moze se nac: namjesti fgets kod pretrazivanja
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,6 +40,7 @@ void UpdateCredential(catPosition p);
 void SortCatAlphabetically(catPosition p);
 void ListCatCredential(catPosition category);
 void SearchCategory(catPosition p);
+void DeleteCredential(catPosition p);
 
 int main() {
     catPosition head = (catPosition)malloc(sizeof(Category));
@@ -55,8 +50,12 @@ int main() {
     head->cred_next = NULL;
 
     printf("- Welcome to LockIT -\n");
+    
     while(1) {
-        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories alphabetically\n (0) Quit\nEnter your operation: ");
+        printf("_____________________________________MENU___________________________________\n\n");
+        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories alphabetically\n (9) Delete credential\n (0) Quit\n");
+        printf("_____________________________________________________________________________\n");
+        printf("Enter your choice: ");
         scanf(" %d", &choice);
         getchar();
         if(choice == 1) {
@@ -82,6 +81,9 @@ int main() {
         }
         else if(choice == 8) {
             SortCatAlphabetically(head);
+        }
+        else if(choice == 9) {
+            DeleteCredential(head);
         }
         else if(choice == 0) {
             printf("Thanks for using LockIT!\n");
@@ -383,5 +385,43 @@ void SortCatAlphabetically(catPosition p) {
             j = j->cat_next;
         }
         end = j;
+    }
+}
+
+void DeleteCredential(catPosition p) {
+    char cred_desc[CRED_DESCRIPTION_SIZE];
+    int found = 0;
+
+    printf("Enter credential description you want to delete: ");
+    fgets(cred_desc, CRED_DESCRIPTION_SIZE, stdin);
+    cred_desc[strcspn(cred_desc, "\n")] = 0;
+
+    credPosition temp = NULL;
+    credPosition prev = NULL;
+
+    while(p != NULL) {
+        prev = NULL;
+        temp = p->cred_next;
+        while(temp != NULL) {
+            if(strcmp(cred_desc, temp->description) == 0) {
+                found = 1;
+                break;
+            }
+            prev = temp;
+            temp = temp->next;
+        }
+        
+        if(found == 1) {
+            if(prev == NULL) {
+                p->cred_next = temp->next;
+            }
+            else {
+                prev->next = temp->next;
+            }
+            free(temp);
+            break;
+        }
+
+        p = p->cat_next;
     }
 }
