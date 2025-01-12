@@ -160,7 +160,7 @@ void AddCategory(catPosition p) {
     p->cat_next = new_category;
 }
 
-void ListCategories(catPosition p) { //provjeru if p == NULL prebaci u main
+void ListCategories(catPosition p) {
 
     printf("Available categories: \n");
     if(p == NULL) {
