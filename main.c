@@ -1,13 +1,11 @@
-//ScanFromFile ne radi dobro
+//DOVRSI OD LINIJE 486, UBACIVANJA CREDENTIALA SA RANDOM PASSWORDOM
 
-//GENERATOR SIFRI, PROVJERA JAKOSTI
-//banner
-
-//enkripcija i PrintToFileEnc izgleda dobro radi
+//PROVJERA JAKOSTI
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define CATEGORY_NAME_SIZE 20
 #define CRED_USERNAME_SIZE 30
@@ -15,7 +13,8 @@
 #define CRED_DESCRIPTION_SIZE 50
 #define CRED_DATE_SIZE 20
 #define MAX_BUFFER 1024
-#define KEY "key"
+#define KEY "KEY"
+#define BANNER
 
 struct _credential;
 typedef struct _credential* credPosition;
@@ -50,8 +49,10 @@ void ListCatCredential(catPosition category);
 void SearchCategory(catPosition p);
 void DeleteCredential(catPosition p);
 
-//work in progress
-void PrintToFile(catPosition p);
+void RandomPassword(catPosition p);
+char* GeneratePassword(int length);
+
+//File and encryption
 char* VigenereCipher(const char* input, const char* key, int encrypt);
 void PrintToFileEnc(catPosition p);
 void ScanFromFile(catPosition p, const char* filename);
@@ -63,17 +64,26 @@ int main() {
     head->cat_next = NULL;
     head->cred_next = NULL;
 
-    printf("- Welcome to LockIT -\n");
-    
+    printf("Welcome to...\n\n");
+
+    printf("888                       888      8888888 88888888888 \n");
+    printf("888                       888        888       888     \n");
+    printf("888                       888        888       888     \n");
+    printf("888      .d88b.   .d8888b 888  888   888       888     \n");
+    printf("888     d88  88b d88P     888 .88P   888       888     \n");
+    printf("888     888  888 888      888888K    888       888     \n");
+    printf("888     Y88..88P Y88b.    888  88b   888       888     \n");
+    printf("88888888  Y88P     Y8888P 888  888 8888888     888     \n\n");
+
+    ScanFromFile(head, "pwds.txt");
+
     while(1) {
         printf("_____________________________________MENU___________________________________\n\n");
-        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories alphabetically\n (9) Delete credential\n (0) Quit\n");
+        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories\n (9) Delete credential\n (10) Generate random password\n (0) Quit\n");
         printf("_____________________________________________________________________________\n");
         printf("Enter your choice: ");
         scanf(" %d", &choice);
         getchar();
-
-        ScanFromFile(head, "pwds.txt");
 
         if(choice == 1) {
             AddCredential(head);
@@ -101,6 +111,9 @@ int main() {
         }
         else if(choice == 9) {
             DeleteCredential(head);
+        }
+        else if (choice == 10) {
+            RandomPassword(head);
         }
         else if(choice == 0) {
             printf("Thanks for using LockIT!\n");
@@ -206,7 +219,6 @@ void AddCredential(catPosition p) {
     if(choice == 'y' || choice == 'Y') {
         ListCategories(p->cat_next);
         printf("Enter your category: ");
-        //scanf("%s", temp_category);
         fgets(temp_category, CATEGORY_NAME_SIZE, stdin);
         temp_category[strcspn(temp_category, "\n")] = 0;
 
@@ -447,28 +459,55 @@ void DeleteCredential(catPosition p) {
     }
 }
 
-//work in progress
-void PrintToFile(catPosition p) {
-    FILE* fp = NULL;
-    fp = fopen("pwds.txt", "w");
-    credPosition temp_cred = NULL;
+//random password and strength checker
+void RandomPassword(catPosition p) {
+    int char_num = 0;
+    char choice;
+    char* new_password = NULL;
 
-    if(fp == NULL) {
-        printf("Failed to open file...\n");
+    printf("Enter the number of characters you want: ");
+    if (scanf("%d", &char_num) != 1 || char_num <= 0 || char_num > CRED_PASSWORD_SIZE) {
+        printf("Invalid input or number out of range...\n");
+        return;
     }
-    else {
-        while(p != NULL) {
-            temp_cred = p->cred_next;
 
-            while(temp_cred != NULL) {
-                fprintf(fp, "%s\t%s\t%s\t%s\n", p->name, temp_cred->username, temp_cred->password, temp_cred->description);
-                temp_cred = temp_cred->next;
-            }
-            p = p->cat_next;
+    while (getchar() != '\n');
+
+    new_password = GeneratePassword(char_num);
+    if (new_password != NULL) {
+        printf("\nNew password: %s\n", new_password);
+        free(new_password);  // Free the allocated memory
+
+        printf("Do you want to save it in a credential (Y/N)? ");
+        scanf("%c", choice);
+        getchar();
+
+        if(choice == 'y' || 'Y') {
+            //enter credential
+            
         }
+        
+    }
+}
+
+char* GeneratePassword(int length) {
+    const char characters[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$^&*()-_=+[]{}|;:,.<>?";
+    int charSetLength = sizeof(characters) - 1;  // Exclude the null terminator
+
+    char* password = (char*)malloc((length + 1) * sizeof(char)); // +1 for the null terminator
+    if (password == NULL) {
+        printf("Memory allocation error...\n");
+        return NULL;
     }
 
-    fclose(fp);
+    for (int i = 0; i < length; i++) {
+        password[i] = characters[rand() % charSetLength];
+    }
+
+    // Null-terminate string
+    password[length] = '\0';
+
+    return password;
 }
 
 //cipher
@@ -476,7 +515,6 @@ char* VigenereCipher(const char* input, const char* key, int encrypt) {
     int textLength = strlen(input);
     int keyLength = strlen(key);
 
-    // Dynamically allocate memory for the output string
     char* output = (char*)malloc(textLength + 1);  // +1 for null terminator
     if (output == NULL) {
         printf("Memory allocation error...\n");
@@ -488,14 +526,13 @@ char* VigenereCipher(const char* input, const char* key, int encrypt) {
         unsigned char currentChar = input[i];
         unsigned char keyChar = key[j % keyLength];
 
-        // Encrypt or decrypt and map to printable range (32–126)
         if (encrypt) {
-            output[i] = ((currentChar + keyChar - 32) % 95) + 32;
+            output[i] = ((currentChar + keyChar - 2 * 32) % 95) + 32;
         } else {
-            output[i] = ((currentChar - keyChar + 95 - 32) % 95) + 32;
+            output[i] = ((currentChar - keyChar + 95) % 95) + 32;
         }
 
-        j++;  // Advance key index for all characters
+        j++;
     }
 
     output[i] = '\0';  // Null-terminate the output string
@@ -516,71 +553,90 @@ void PrintToFileEnc(catPosition p) {
         temp_cred = p->cred_next;
 
         while (temp_cred != NULL) {
-            // Dynamically allocate memory for encrypted strings
+            
             char* user_encrypted = VigenereCipher(temp_cred->username, KEY, 1);
             char* pwd_encrypted = VigenereCipher(temp_cred->password, KEY, 1);
             char* desc_encrypted = VigenereCipher(temp_cred->description, KEY, 1);
             char* cat_encrypted = VigenereCipher(p->name, KEY, 1);
 
-            if (user_encrypted && pwd_encrypted && desc_encrypted && cat_encrypted) {
-                // Print encrypted strings to the file
+
+            char* user_decrypted = VigenereCipher(user_encrypted, KEY, 0);
+            char* pwd_decrypted = VigenereCipher(pwd_encrypted, KEY, 0);
+            char* desc_decrypted = VigenereCipher(desc_encrypted, KEY, 0);
+            char* cat_decrypted = VigenereCipher(cat_encrypted, KEY, 0);
+
+            if (user_encrypted && pwd_encrypted && desc_encrypted && cat_encrypted) {                
                 fprintf(fp, "%s\t%s\t%s\t%s\n", cat_encrypted, user_encrypted, pwd_encrypted, desc_encrypted);
             }
 
-            // Free dynamically allocated memory for encrypted strings
             free(user_encrypted);
             free(pwd_encrypted);
             free(desc_encrypted);
             free(cat_encrypted);
 
-            // Move to the next credential
+            free(user_decrypted);
+            free(pwd_decrypted);
+            free(desc_decrypted);
+            free(cat_decrypted);
+
             temp_cred = temp_cred->next;
         }
-        p = p->cat_next;  // Move to the next category
+        p = p->cat_next;
     }
 
-    fclose(fp);  // Close the file
+    fclose(fp);
 }
 
-
 void ScanFromFile(catPosition p, const char* filename) {
-    char temp_desc[CRED_DESCRIPTION_SIZE];
+    char temp_line[MAX_BUFFER];
     char temp_cat[CATEGORY_NAME_SIZE];
     char temp_user[CRED_USERNAME_SIZE];
     char temp_pwd[CRED_PASSWORD_SIZE];
+    char temp_desc[CRED_DESCRIPTION_SIZE];
 
-    char* decrypt_desc;
-    char* decrypt_cat;
-    char* decrypt_user;
-    char* decrypt_pwd;
-
-    credPosition new_cred = NULL;
-
-    new_cred = (credPosition)malloc(sizeof(Credential));
-        if(new_cred == NULL) {
-            printf("Memory allocation error");
-        }
-
-    FILE* fp = NULL;
-    fp = fopen(filename, "r");
-    if(fp == NULL) {
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL) {
         printf("Failed to open file...\n");
+        return;
     }
-    else {
-        while(!feof(fp)) {
-            if(fscanf(fp, "%s\t%s\t%s\t%s", temp_cat, temp_user, temp_pwd, temp_desc) == 4) {
-                decrypt_cat = VigenereCipher(temp_cat, KEY, 0);
-                decrypt_user = VigenereCipher(temp_user, KEY, 0);
-                decrypt_pwd = VigenereCipher(temp_pwd, KEY, 0);
-                decrypt_desc = VigenereCipher(temp_desc, KEY, 0);
 
-                strcpy(new_cred->username, decrypt_user);
-                strcpy(new_cred->password, decrypt_pwd);
-                strcpy(new_cred->description, decrypt_desc);
-                
-                InsertCredential(p, new_cred, decrypt_cat);
+    while (fgets(temp_line, MAX_BUFFER, fp)) {
+
+        if (sscanf(temp_line, "%19s\t%29s\t%19s\t%49s", temp_cat, temp_user, temp_pwd, temp_desc) == 4) {
+            credPosition new_cred = (credPosition)malloc(sizeof(Credential));
+            if (new_cred == NULL) {
+                printf("Memory allocation error...\n");
+                fclose(fp);
+                return;
             }
+
+            char* decrypt_cat = VigenereCipher(temp_cat, KEY, 0);
+            char* decrypt_user = VigenereCipher(temp_user, KEY, 0);
+            char* decrypt_pwd = VigenereCipher(temp_pwd, KEY, 0);
+            char* decrypt_desc = VigenereCipher(temp_desc, KEY, 0);
+
+            if (!decrypt_cat || !decrypt_user || !decrypt_pwd || !decrypt_desc) {
+                printf("Decryption error...\n");
+                free(new_cred);
+                continue;
+            }
+
+            strncpy(new_cred->username, decrypt_user, CRED_USERNAME_SIZE);
+            strncpy(new_cred->password, decrypt_pwd, CRED_PASSWORD_SIZE);
+            strncpy(new_cred->description, decrypt_desc, CRED_DESCRIPTION_SIZE);
+            new_cred->next = NULL;
+
+            InsertCredential(p, new_cred, decrypt_cat);
+
+            // Free decrypted strings
+            free(decrypt_cat);
+            free(decrypt_user);
+            free(decrypt_pwd);
+            free(decrypt_desc);
+        } else {
+            printf("Error reading line: %s\n", temp_line);
         }
     }
 
+    fclose(fp);
 }
