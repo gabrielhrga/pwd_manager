@@ -1,10 +1,7 @@
-//DOVRSI OD LINIJE 486, UBACIVANJA CREDENTIALA SA RANDOM PASSWORDOM
-
-//PROVJERA JAKOSTI
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 
 #define CATEGORY_NAME_SIZE 20
@@ -14,7 +11,6 @@
 #define CRED_DATE_SIZE 20
 #define MAX_BUFFER 1024
 #define KEY "KEY"
-#define BANNER
 
 struct _credential;
 typedef struct _credential* credPosition;
@@ -22,7 +18,6 @@ typedef struct _credential {
     char username[CRED_USERNAME_SIZE];
     char password[CRED_PASSWORD_SIZE];
     char description[CRED_DESCRIPTION_SIZE];
-    char date[CRED_DATE_SIZE];
     credPosition next;
 }Credential;
 
@@ -51,8 +46,9 @@ void DeleteCredential(catPosition p);
 
 void RandomPassword(catPosition p);
 char* GeneratePassword(int length);
+void PwdStrengthChecker(catPosition p);
+int isValidPassword(const char *password);
 
-//File and encryption
 char* VigenereCipher(const char* input, const char* key, int encrypt);
 void PrintToFileEnc(catPosition p);
 void ScanFromFile(catPosition p, const char* filename);
@@ -79,7 +75,7 @@ int main() {
 
     while(1) {
         printf("_____________________________________MENU___________________________________\n\n");
-        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories\n (9) Delete credential\n (10) Generate random password\n (0) Quit\n");
+        printf(" (1) Add new credential\n (2) List categories\n (3) List all credentials\n (4) Search for credential\n (5) Update credential\n (6) Add new category\n (7) List category credentials\n (8) Sort categories\n (9) Delete credential\n (10) Generate random password\n (11) Check password strength\n (0) Quit\n");
         printf("_____________________________________________________________________________\n");
         printf("Enter your choice: ");
         scanf(" %d", &choice);
@@ -112,8 +108,11 @@ int main() {
         else if(choice == 9) {
             DeleteCredential(head);
         }
-        else if (choice == 10) {
+        else if(choice == 10) {
             RandomPassword(head);
+        }
+        else if(choice == 11) {
+            PwdStrengthChecker(head);
         }
         else if(choice == 0) {
             printf("Thanks for using LockIT!\n");
@@ -474,17 +473,57 @@ void RandomPassword(catPosition p) {
     while (getchar() != '\n');
 
     new_password = GeneratePassword(char_num);
+
     if (new_password != NULL) {
         printf("\nNew password: %s\n", new_password);
-        free(new_password);  // Free the allocated memory
 
-        printf("Do you want to save it in a credential (Y/N)? ");
-        scanf("%c", choice);
+        printf("Do you want to save it in a new credential (Y/N)? ");
+        scanf(" %c", &choice);
         getchar();
 
-        if(choice == 'y' || 'Y') {
-            //enter credential
-            
+        if(choice == 'y' || choice == 'Y') {
+            char new_username[CRED_USERNAME_SIZE];
+            char new_description[CRED_DESCRIPTION_SIZE];  
+            char temp_category[CATEGORY_NAME_SIZE];
+            char general_cat[CATEGORY_NAME_SIZE] = "General";
+
+            credPosition new_credential = NULL;
+            new_credential = (credPosition)malloc(sizeof(Credential));
+            if(new_credential == NULL) {
+                printf("Memory allocation error...\n");
+                return;
+            }
+
+            printf("Enter your credential username: ");
+            fgets(new_username, CRED_USERNAME_SIZE, stdin);
+            new_username[strcspn(new_username, "\n")] = 0;
+
+            printf("Enter your credential description: ");
+            fgets(new_description, CRED_DESCRIPTION_SIZE, stdin);
+            new_description[strcspn(new_description, "\n")] = 0; 
+
+            strcpy(new_credential->username, new_username);
+            strcpy(new_credential->password, new_password);
+            strcpy(new_credential->description, new_description);
+            new_credential->next = NULL;
+
+            printf("Do you want to store your new credential in a specific category (Y/N)? ");
+            scanf(" %c", &choice);
+            getchar();
+
+            if(choice == 'y' || choice == 'Y') {
+                ListCategories(p->cat_next);
+                printf("Enter your category: ");
+                fgets(temp_category, CATEGORY_NAME_SIZE, stdin);
+                temp_category[strcspn(temp_category, "\n")] = 0;
+
+                InsertCredential(p, new_credential, temp_category);
+                
+            }
+            else {
+                InsertCredential(p, new_credential, general_cat);
+            }
+            free(new_password);
         }
         
     }
@@ -492,9 +531,9 @@ void RandomPassword(catPosition p) {
 
 char* GeneratePassword(int length) {
     const char characters[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$^&*()-_=+[]{}|;:,.<>?";
-    int charSetLength = sizeof(characters) - 1;  // Exclude the null terminator
+    int charSetLength = sizeof(characters) - 1;  // Exclude null terminator
 
-    char* password = (char*)malloc((length + 1) * sizeof(char)); // +1 for the null terminator
+    char* password = (char*)malloc((length + 1) * sizeof(char)); // +1 for null terminator
     if (password == NULL) {
         printf("Memory allocation error...\n");
         return NULL;
@@ -504,18 +543,81 @@ char* GeneratePassword(int length) {
         password[i] = characters[rand() % charSetLength];
     }
 
-    // Null-terminate string
     password[length] = '\0';
 
     return password;
 }
 
-//cipher
+void PwdStrengthChecker(catPosition p) {
+    int choice = 0;
+
+    printf("(1) Type a password to check\n");
+    printf("(2) Search an existing password by description\n");
+    printf("Enter choice: ");
+
+    scanf(" %d", &choice);
+    getchar();
+
+    if(choice == 1) {
+        char temp_pwd[CRED_PASSWORD_SIZE];
+
+        printf("Enter password: ");
+        fgets(temp_pwd, CRED_PASSWORD_SIZE, stdin);
+        temp_pwd[strcspn(temp_pwd, "\n")] = 0;
+
+        if(isValidPassword(temp_pwd) == 1) {
+            printf("Password is strong...\n");
+        }
+        else {
+            printf("Password is weak...\n");
+        }
+    }
+    else if(choice == 2) {
+        credPosition credential = SearchCredential(p);
+
+        if(isValidPassword(credential->password) == 1) {
+            printf("Password is strong...\n");
+        }
+        else {
+            printf("Password is weak...\n");
+        }
+    }
+    else {
+        printf("Invalid choice...\n");
+        return;
+    }
+}
+
+int isValidPassword(const char *password) {
+    int length = strlen(password);
+    if (length < 8) {
+        return 0;
+    }
+
+    // Flags
+    int hasUpper = 0, hasLower = 0, hasDigit = 0, hasSpecial = 0;
+
+    for (int i = 0; i < length; i++) {
+        if (isupper(password[i])) {
+            hasUpper = 1;
+        } else if (islower(password[i])) {
+            hasLower = 1;
+        } else if (isdigit(password[i])) {
+            hasDigit = 1;
+        } else if (ispunct(password[i])) {
+            hasSpecial = 1;
+        }
+    }
+
+    return hasUpper && hasLower && hasDigit && hasSpecial;
+}
+
+// Cipher
 char* VigenereCipher(const char* input, const char* key, int encrypt) {
     int textLength = strlen(input);
     int keyLength = strlen(key);
 
-    char* output = (char*)malloc(textLength + 1);  // +1 for null terminator
+    char* output = (char*)malloc(textLength + 1);
     if (output == NULL) {
         printf("Memory allocation error...\n");
         return NULL;
@@ -535,7 +637,7 @@ char* VigenereCipher(const char* input, const char* key, int encrypt) {
         j++;
     }
 
-    output[i] = '\0';  // Null-terminate the output string
+    output[i] = '\0';
     return output;
 }
 
@@ -628,7 +730,6 @@ void ScanFromFile(catPosition p, const char* filename) {
 
             InsertCredential(p, new_cred, decrypt_cat);
 
-            // Free decrypted strings
             free(decrypt_cat);
             free(decrypt_user);
             free(decrypt_pwd);
