@@ -662,11 +662,6 @@ void PrintToFileEnc(catPosition p) {
             char* cat_encrypted = VigenereCipher(p->name, KEY, 1);
 
 
-            char* user_decrypted = VigenereCipher(user_encrypted, KEY, 0);
-            char* pwd_decrypted = VigenereCipher(pwd_encrypted, KEY, 0);
-            char* desc_decrypted = VigenereCipher(desc_encrypted, KEY, 0);
-            char* cat_decrypted = VigenereCipher(cat_encrypted, KEY, 0);
-
             if (user_encrypted && pwd_encrypted && desc_encrypted && cat_encrypted) {                
                 fprintf(fp, "%s\t%s\t%s\t%s\n", cat_encrypted, user_encrypted, pwd_encrypted, desc_encrypted);
             }
@@ -676,10 +671,6 @@ void PrintToFileEnc(catPosition p) {
             free(desc_encrypted);
             free(cat_encrypted);
 
-            free(user_decrypted);
-            free(pwd_decrypted);
-            free(desc_decrypted);
-            free(cat_decrypted);
 
             temp_cred = temp_cred->next;
         }
